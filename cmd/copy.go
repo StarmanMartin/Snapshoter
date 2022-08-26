@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 )
 
 func CopyDirectory(scrDir, dest string) error {
@@ -20,11 +19,6 @@ func CopyDirectory(scrDir, dest string) error {
 		fileInfo, err := os.Stat(sourcePath)
 		if err != nil {
 			return err
-		}
-
-		stat, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return fmt.Errorf("failed to get raw syscall.Stat_t data for '%s'", sourcePath)
 		}
 
 		switch fileInfo.Mode() & os.ModeType {
@@ -43,10 +37,6 @@ func CopyDirectory(scrDir, dest string) error {
 			if err := Copy(sourcePath, destPath); err != nil {
 				return err
 			}
-		}
-
-		if err := os.Lchown(destPath, int(stat.Uid), int(stat.Gid)); err != nil {
-			return err
 		}
 
 		fInfo, err := entry.Info()
@@ -71,14 +61,16 @@ func Copy(srcFile, dstFile string) error {
 	}
 
 	defer func(out *os.File) {
-		err := out.Close()
-		fmt.Println(err)
+		if err := out.Close(); err != nil {
+			fmt.Println(err)
+		}
 	}(out)
 
 	in, err := os.Open(srcFile)
 	defer func(in *os.File) {
-		err := in.Close()
-		fmt.Println(err)
+		if err := in.Close(); err != nil {
+			fmt.Println(err)
+		}
 	}(in)
 	if err != nil {
 		return err
